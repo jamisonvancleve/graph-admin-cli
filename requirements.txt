@@ -1,0 +1,11 @@
+# API Integration
+requests
+
+# CLI Framework
+click
+
+# Environment Variable Management
+python-dotenv
+
+# Testing Framework
+pytest
