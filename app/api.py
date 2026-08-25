@@ -80,6 +80,8 @@ def _fetch_graph_resource(resource_type):
         logger.error(f"Unexpceted error: {err}")
         return None
 
+
+
 if __name__ == "__main__":
     #Testing both endpoints
 
