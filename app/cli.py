@@ -1,26 +1,27 @@
 import argparse
 import logging
 import json
-import sys
+#import sys
+
 from app.api import get_users, get_devices
+from app.processing import normalize_users, normalize_devices, filter_users, filter_devices
 
 def handle_user_command(args):
     """Handler function for the user subcommand"""
     #Debug print
     #print("args passed to handle_user_command: ", args)
 
-    #Rertieve all users from Microsoft Graph
-    data = get_users()
-    records = data.get("value",[]) if data else []
+    #Retrieve all users from Microsoft Graph
+    raw_data = get_users()
+    if raw_data is None:
+        print("Failed to retrieve user data from Microsoft Graph.")
+        return
+
+    #Normalize raw data into clean dictionary object
+    records = normalize_users(raw_data)
 
     #Filter results (if args.search was specified by the script executor)
-    if args.search:
-        search_term = args.search.lower()
-        records = [
-            u for u in records
-            if search_term.lower() in u.get("displayName", "").lower()
-            or search_term in u.get("userPrincipalName", "").lower()
-        ]
+    records = filter_users(records, args.search)
 
     #Apply limit (default is 25, so there will always be a value to apply)
     records = records[:args.limit]
@@ -34,7 +35,7 @@ def handle_user_command(args):
             return
 
         for user in records:
-            print(f"Name: {user.get('displayName')}, UPN: {user.get('userPrincipalName')}")
+            print(f"display_name: {user.get('display_name')}, UPN: {user.get('user_principal_name')}")
 
 
 def handle_device_command(args):
@@ -43,16 +44,17 @@ def handle_device_command(args):
     #print("args passed to handle_device_command: ", args)
 
     #Rertieve all devices from Microsoft Graph
-    data = get_devices()
-    records = data.get("value",[]) if data else []
+    raw_data = get_devices()
+    if raw_data is None:
+        print("Failed to retrieve user data from Microsoft Graph.")
+        return
+
+
+    #Normalize raw data into clean dictionary object
+    records = normalize_devices(raw_data)
 
     #Filter results (if args.search was specified by the script executor)
-    if args.search:
-        search_term = args.search.lower()
-        records = [
-            d for d in records
-            if search_term in d.get("displayName", "").lower()
-        ]
+    records = filter_devices(records, args.search)
 
     #Apply limit (default is 25, so there will always be a value to apply)
     records = records[:args.limit]
@@ -66,8 +68,11 @@ def handle_device_command(args):
             return
 
         for device in records:
-            print(f"Name: {device.get('displayName')}, ID: {device.get('deviceId')}")
-            print(f"Device: {device.get('displayName')}, ID: {device.get('deviceId')}, OS: {device.get('operatingSystem')}, OS version: {device.get('operatingSystemVersion')}")
+            print(f"{device.get('display_name')}: "
+                  f"\n\tid: {device.get('id')}"
+                  f"\n\tdevice_id: {device.get('device_id')}"
+                  f"\n\toperating_system: {device.get('operating_system')}"
+                  f"\n\toperating_system_version: {device.get('operating_system_version')}")
 
 
 def build_parser():
