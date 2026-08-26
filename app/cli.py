@@ -55,13 +55,13 @@ def handle_user_command(args):
                       f"\n\tpreferred_language: {user.get('preferred_language')}"
                       f"\n\tlastSignInDateTime: {last_sign_in_date}")
 
+            print(f"\nTotal users returned: {len(records)}")
+
         case "csv":
             print(format_as_csv(records))
 
         case _:
-            print("Unknown format: {args.format}.")
-
-    print(f"\nTotal users returned: {len(records)}")
+            print(f"Unknown format: {args.format}.")
 
 
 def handle_device_command(args):
@@ -103,13 +103,13 @@ def handle_device_command(args):
                       f"\n\toperating_system: {device.get('operating_system')}"
                       f"\n\toperating_system_version: {device.get('operating_system_version')}")
 
+            print(f"\nTotal devices returned: {len(records)}")
+
         case "csv":
             print(format_as_csv(records))
 
         case _:
-            print("Unknown format: {args.format}.")
-
-    print(f"\nTotal devices returned: {len(records)}")
+            print(f"Unknown format: {args.format}.")
 
 def build_parser():
     """Function to build the argument parser"""
