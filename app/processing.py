@@ -1,5 +1,7 @@
 from datetime import date, timedelta, datetime
-
+import json
+import csv
+import io
 
 def normalize_users(raw_data):
     """Normalizes raw data payload from Microsoft Graph API"""
@@ -115,3 +117,37 @@ def get_inactive_users(records, days_threshold):
 
     return inactive_users
 
+
+def format_as_csv(records):
+    """Formats a list of normalized records into a CSV file."""
+
+    #Handle an empty records
+    if not records:
+        return ""
+
+    #Create an in-memory string buffer to generate a CSV in memory
+    csv_output = io.StringIO()
+
+    #Define the column headers using the dictionary keys
+    fieldnames = list(records[0].keys())
+
+    #Configure the writer object
+    writer = csv.DictWriter(csv_output, fieldnames=fieldnames)
+
+    #Write headers
+    writer.writeheader()
+
+    #Loop through each row, then loop through each key/value pair in the row.
+    for row in records:
+        flattened_row = {}
+        for key, value in row.items():
+            #If the value is a dictionary, such as signInActivity, flatten it into a string using json.dumps()
+            if isinstance(value, dict):
+                flattened_row[key] = json.dumps(value)
+            else:
+                flattened_row[key] = value
+
+        #Write the flattened row to our CSV object
+        writer.writerow(flattened_row)
+
+    return csv_output.getvalue().strip()

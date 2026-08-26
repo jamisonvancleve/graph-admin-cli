@@ -1,9 +1,10 @@
 import argparse
 import logging
 import json
+
 #import sys
 from app.api import get_users, get_devices
-from app.processing import normalize_users, normalize_devices, filter_users, filter_devices, get_inactive_users
+from app.processing import normalize_users, normalize_devices, filter_users, filter_devices, get_inactive_users, format_as_csv
 
 def handle_user_command(args):
     """Handler function for the user subcommand"""
@@ -31,19 +32,36 @@ def handle_user_command(args):
     records = records[:args.limit]
 
     #Apply output formatting (default is text)
-    if args.format == "json":
-        print(json.dumps(records, indent=2))
-    else:
-        if not records:
-            print("No matching users found.")
-            return
+    if not records:
+        print("No records found.")
+        return
 
-        for user in records:
-            print(f"display_name: {user.get('display_name')}, "
-                  f"UPN: {user.get('user_principal_name')}, "
-                  f"lastSignInDateTime: {(user.get("signInActivity") or {}).get("lastSignInDateTime") or "N/A"}")
+    match args.format:
+        case "json":
+            print(json.dumps(records, indent=2))
 
-        print(f"\nTotal users returned: {len(records)}")
+        case "text":
+            for user in records:
+                last_sign_in_date = (user.get('signInActivity') or {}).get('lastSignInDateTime') or "N/A"
+                print(f"{user.get('display_name')}:"
+                      f"\n\tdisplay_name: {user.get('display_name')}"
+                      f"\n\tUPN: {user.get('user_principal_name')}"
+                      f"\n\tid: {user.get('id')}"
+                      f"\n\tjob_title: {user.get('job_title')}"
+                      f"\n\toffice_location: {user.get('office_location')}"
+                      f"\n\temail: {user.get('email')}"
+                      f"\n\tbusiness_phones: {user.get('business_phones')}"
+                      f"\n\tmobile_phone: {user.get('mobile_phone')}"
+                      f"\n\tpreferred_language: {user.get('preferred_language')}"
+                      f"\n\tlastSignInDateTime: {last_sign_in_date}")
+
+        case "csv":
+            print(format_as_csv(records))
+
+        case _:
+            print("Unknown format: {args.format}.")
+
+    print(f"\nTotal users returned: {len(records)}")
 
 
 def handle_device_command(args):
@@ -68,22 +86,30 @@ def handle_device_command(args):
     records = records[:args.limit]
 
     # Apply output formatting (default is 'text')
-    if args.format == "json":
+    if not records:
+        print("No records found.")
+        return
+
+    match args.format:
+        case "json":
             print(json.dumps(records, indent=2))
-    else:
-        if not records:
-            print("No matching devices found.")
-            return
 
-        for device in records:
-            print(f"{device.get('display_name')}: "
-                  f"\n\tid: {device.get('id')}"
-                  f"\n\tdevice_id: {device.get('device_id')}"
-                  f"\n\toperating_system: {device.get('operating_system')}"
-                  f"\n\toperating_system_version: {device.get('operating_system_version')}")
+        case "text":
+            for device in records:
+                print(f"{device.get('display_name')}: "
+                      f"\n\tdisplay_name: {device.get('display_name')}"
+                      f"\n\tid: {device.get('id')}"
+                      f"\n\tdevice_id: {device.get('device_id')}"
+                      f"\n\toperating_system: {device.get('operating_system')}"
+                      f"\n\toperating_system_version: {device.get('operating_system_version')}")
 
-        print(f"\nTotal devices returned: {len(records)}")
+        case "csv":
+            print(format_as_csv(records))
 
+        case _:
+            print("Unknown format: {args.format}.")
+
+    print(f"\nTotal devices returned: {len(records)}")
 
 def build_parser():
     """Function to build the argument parser"""
@@ -93,7 +119,7 @@ def build_parser():
     parent_parser = argparse.ArgumentParser(add_help=False)
 
     # Set output format bassed on --format argument
-    parent_parser.add_argument("--format", choices=["text", "json"], default="text", help="Select output format")
+    parent_parser.add_argument("--format", choices=["text", "json", "csv"], default="text", help="Select output format")
     parent_parser.add_argument("--limit", type=int, default=25, help="Maximum number of records to return (default = 25)")
 
     #Define subcommands (i.e. user or device)
