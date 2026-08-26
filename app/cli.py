@@ -37,6 +37,8 @@ def handle_user_command(args):
         for user in records:
             print(f"display_name: {user.get('display_name')}, UPN: {user.get('user_principal_name')}")
 
+        print(f"\nTotal users returned: {len(records)}")
+
 
 def handle_device_command(args):
     """Handler function for the device subcommand"""
@@ -74,6 +76,7 @@ def handle_device_command(args):
                   f"\n\toperating_system: {device.get('operating_system')}"
                   f"\n\toperating_system_version: {device.get('operating_system_version')}")
 
+        print(f"\nTotal devices returned: {len(records)}")
 
 def build_parser():
     """Function to build the argument parser"""
@@ -84,6 +87,7 @@ def build_parser():
 
     # Set output format bassed on --format argument
     parent_parser.add_argument("--format", choices=["text", "json"], default="text", help="Select output format")
+    parent_parser.add_argument("--limit", type=int, default=25, help="Maximum number of records to return (default = 25)")
 
     #Define subcommands (i.e. user or device)
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
@@ -91,13 +95,11 @@ def build_parser():
     #Configure subcommand: user
     user_parser = subparsers.add_parser("user", aliases=["users"], parents=[parent_parser], help="Manage user objects")
     user_parser.add_argument("--search", help="Filter users by display name or UPN")
-    user_parser.add_argument("--limit", type=int, default=25, help="Maximum number of records to return (default = 25)")
     user_parser.set_defaults(func=handle_user_command)
 
     #Configure subcommand: device
     device_parser = subparsers.add_parser("device", aliases=["devices"], parents=[parent_parser], help="Manage device objects")
     device_parser.add_argument("--search", help="Filter devices by display name")
-    device_parser.add_argument("--limit", type=int, default=25, help="Maximum number of records to return (default = 25)")
     device_parser.set_defaults(func=handle_device_command)
 
     return parser
