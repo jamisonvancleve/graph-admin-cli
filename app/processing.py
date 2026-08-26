@@ -1,3 +1,4 @@
+import datetime
 
 def normalize_users(raw_data):
     """Normalizes raw data payload from Microsoft Graph API"""
@@ -72,3 +73,13 @@ def filter_devices(records, search_term):
         or term in d.get("id", "").lower()
         or term in d.get("device_id", "").lower()
     ]
+
+def get_inactive_users(records, days_threshold):
+    #Calculate the cutoff date
+    cutoff_date = datetime.today() - days_threshold
+
+    return [
+        u for u in records
+            if cutoff_date < u.get("signInActivity")
+    ]
+

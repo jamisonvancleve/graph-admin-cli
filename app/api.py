@@ -37,7 +37,12 @@ def _fetch_graph_resource(resource_type):
     endpoint = f"{graph_base_url}/{resource_type.lstrip('/')}"
 
     #Debug print
-    #print("endpoint: ",endpoint)
+    # if "user" in resource_type.lower():
+    #     endpoint += "/?$select=id,displayName,userPrincipalName,jobTitle,officeLocation,mail,businessPhones,mobilePhone,preferredLanguage,signInActivity"
+
+    print("endpoint: ",endpoint)
+
+
 
     try:
         response = requests.get(endpoint, headers=headers, timeout=10)
@@ -82,43 +87,3 @@ def _fetch_graph_resource(resource_type):
 
 
 
-if __name__ == "__main__":
-    #Testing both endpoints
-
-    #Call get_users(), then look inside the dictionary that was returned for the key named 'value'.
-    #If found, assign its contents to the users variable. If missing, set users to an empty list '[]'
-    users = get_users().get("value",[])
-
-    #The next two lines accomplish the same as the single line above. Less efficient, but more readable.
-    #data = get_users()
-    #users = data.get("value", [])
-
-    #Print each user in the list and the total number below
-
-    for user in users:
-        name = user.get("displayName")
-        title = user.get("jobTitle")
-        upn = user.get("userPrincipalName")
-
-        print(f"Name: {name}, Title: {title}, upn: {upn}")
-
-    print(f"\nTotal users returned: {len(users)}")
-
-
-
-
-    #Call devices(), then look inside the dictionary that was returned for the key named 'value'.
-    #If found, assign its contents to the devices variable. If missing, set devices to an empty list '[]'
-    devices = get_devices().get("value",[])
-
-    #Print each device in the list and the total number below
-
-    for device in devices:
-        name = device.get("displayName")
-        deviceId = device.get("deviceId")
-        os = device.get("operatingSystem")
-        os_version = device.get("operatingSystemVersion")
-
-        print(f"Name: {name}, deviceId: {deviceId}, os: {os}, os_version: {os_version}")
-
-    #print(f"\nTotal users returned: {len(users)}")
