@@ -8,19 +8,52 @@ from app.auth import get_graph_token
 #Create a logger object for this module
 logger = logging.getLogger(__name__)
 
+#Debug Flag - without an Entra P1/P2 license, the attempt to fetch user data will generate errors and warnings
+#Set ATTEMPT_SIGNINACTIVITY to False to bypass Attempt 1 and supress errors and warning
+ATTEMPT_SIGNINACTIVITY = False
+
 #Set base URL for endpoint
 graph_base_url = "https://graph.microsoft.com/v1.0"
 
 
 def get_users():
     """Fetches user objects from Microsoft Graph API"""
-    return _fetch_graph_resource("users")
+
+    #The select clause must be built because we need the signInActivity field, which is not included in the default response
+    #Since the signInActivity field requires an Entra P1/P2 license, we will attempt to use it. If it fails, we will fall back to using createdDateTime.
+    primary_params = {"$select": "id,displayName,userPrincipalName,jobTitle,officeLocation,mail,businessPhones,mobilePhone,preferredLanguage,signInActivity"}
+    fallback_params ={"$select": "id,displayName,userPrincipalName,jobTitle,officeLocation,mail,businessPhones,mobilePhone,preferredLanguage,createdDateTime"}
+
+    #Attempt 1:  request signInActivity (Entra P1/P2 license required)
+    if ATTEMPT_SIGNINACTIVITY:
+        result = _fetch_graph_resource("users", params=primary_params)
+    else:
+        result = None
+
+    #Attempt 2: fallback to basic attributes if P1/P2 license error occurs
+    if result is None:
+        if ATTEMPT_SIGNINACTIVITY:
+            logger.warning("Attempt to fetch user object failed when using primary_params for signInActivity. Likely missing an Entra P1/P2 license. Executing fallback query.")
+        result = _fetch_graph_resource("users", params=fallback_params)
+
+        #Safety check if fallback query returned valid data
+        if result and "value" in result:
+            for user in result["value"]:
+                #Synthesize lastSignInDateTime from the createdDateTime field.
+                if not user.get("signInActivity"):
+                    user["signInActivity"] = {
+                        "lastSignInDateTime": user.get("createdDateTime")
+                    }
+
+    return result
 
 def get_devices():
     """Fetches device objects from Microsoft Graph API"""
-    return _fetch_graph_resource("devices")
+    #We must use the select clause to retrieve users. Therefore, we use it for devices to remain consistent and allow for future customization
+    params = {"$select": "id,deviceId,displayName,operatingSystem,operatingSystemVersion"}
+    return _fetch_graph_resource("devices", params=params)
 
-def _fetch_graph_resource(resource_type):
+def _fetch_graph_resource(resource_type,params=None):
     """Internal helper to run Microsoft Graph API requests with error handling"""
     #Get auth token
     graph_token = get_graph_token()
@@ -36,20 +69,14 @@ def _fetch_graph_resource(resource_type):
     }
     endpoint = f"{graph_base_url}/{resource_type.lstrip('/')}"
 
-    #Debug print
-    # if "user" in resource_type.lower():
-    #     endpoint += "/?$select=id,displayName,userPrincipalName,jobTitle,officeLocation,mail,businessPhones,mobilePhone,preferredLanguage,signInActivity"
-
-    print("endpoint: ",endpoint)
-
-
-
     try:
-        response = requests.get(endpoint, headers=headers, timeout=10)
+        #Send request to endpoing (pass params directly to request.get())
+        response = requests.get(endpoint, headers=headers, params=params,timeout=10)
         response.raise_for_status()
 
         #Debug print
         #print(response.json())
+
         return response.json()
 
     except requests.exceptions.Timeout:

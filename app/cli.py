@@ -2,9 +2,8 @@ import argparse
 import logging
 import json
 #import sys
-
 from app.api import get_users, get_devices
-from app.processing import normalize_users, normalize_devices, filter_users, filter_devices
+from app.processing import normalize_users, normalize_devices, filter_users, filter_devices, get_inactive_users
 
 def handle_user_command(args):
     """Handler function for the user subcommand"""
@@ -23,6 +22,11 @@ def handle_user_command(args):
     #Filter results (if args.search was specified by the script executor)
     records = filter_users(records, args.search)
 
+    #Find inactive users (if args.inactive_days was specified by the script executor)
+    #If no value is specified for --inactive-days, it defaults to 90
+    if args.inactive_days is not None:
+        records = get_inactive_users(records, args.inactive_days)
+
     #Apply limit (default is 25, so there will always be a value to apply)
     records = records[:args.limit]
 
@@ -35,7 +39,9 @@ def handle_user_command(args):
             return
 
         for user in records:
-            print(f"display_name: {user.get('display_name')}, UPN: {user.get('user_principal_name')}")
+            print(f"display_name: {user.get('display_name')}, "
+                  f"UPN: {user.get('user_principal_name')}, "
+                  f"lastSignInDateTime: {(user.get("signInActivity") or {}).get("lastSignInDateTime") or "N/A"}")
 
         print(f"\nTotal users returned: {len(records)}")
 
@@ -48,7 +54,7 @@ def handle_device_command(args):
     #Rertieve all devices from Microsoft Graph
     raw_data = get_devices()
     if raw_data is None:
-        print("Failed to retrieve user data from Microsoft Graph.")
+        print("Failed to retrieve device data from Microsoft Graph.")
         return
 
 
@@ -78,6 +84,7 @@ def handle_device_command(args):
 
         print(f"\nTotal devices returned: {len(records)}")
 
+
 def build_parser():
     """Function to build the argument parser"""
     parser = argparse.ArgumentParser(description="Graph Admin CLI Tool")
@@ -95,6 +102,7 @@ def build_parser():
     #Configure subcommand: user
     user_parser = subparsers.add_parser("user", aliases=["users"], parents=[parent_parser], help="Manage user objects")
     user_parser.add_argument("--search", help="Filter users by display name or UPN")
+    user_parser.add_argument("--inactive-days", nargs="?", type=int, const=90, default=None, help="Threshold for inactive users (default = 90 days)")
     user_parser.set_defaults(func=handle_user_command)
 
     #Configure subcommand: device
@@ -107,6 +115,7 @@ def build_parser():
 
 def run():
     """Function to run the cli parser"""
+
     parser = build_parser()
     args = parser.parse_args()
 

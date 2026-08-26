@@ -1,4 +1,5 @@
-import datetime
+from datetime import date, timedelta, datetime
+
 
 def normalize_users(raw_data):
     """Normalizes raw data payload from Microsoft Graph API"""
@@ -22,6 +23,7 @@ def normalize_users(raw_data):
             "business_phones": ", ".join(businessPhones) if businessPhones else "N/A",
             "mobile_phone": user.get("mobilePhone") or "N/A",
             "preferred_language": user.get("preferredLanguage") or "N/A",
+            "signInActivity": user.get("signInActivity"),
         })
 
     return normalized
@@ -74,12 +76,42 @@ def filter_devices(records, search_term):
         or term in d.get("device_id", "").lower()
     ]
 
-def get_inactive_users(records, days_threshold):
-    #Calculate the cutoff date
-    cutoff_date = datetime.today() - days_threshold
 
-    return [
-        u for u in records
-            if cutoff_date < u.get("signInActivity")
-    ]
+def get_inactive_users(records, days_threshold):
+    """
+    Returns users whose last sign-in date is older than days_threshold.
+    If no value is specified for the --inactive-days parameter, it defaults to 90
+    Users with no sign-in data are considered inactive.
+    """
+    #Calculate the threshold date
+    threshold_date = date.today() - timedelta(days=days_threshold)
+
+    #Initialize the
+    inactive_users = []
+
+    #Construct a filtered list, based on lastSignInDateTime
+    #If lastSignInDateTime < threshold_date, any records that are True are considered Inactive and returned
+    for u in records:
+        #Handle missing key or None values
+        activity = u.get("signInActivity") or {}
+        last_sign_in_raw = activity.get("lastSignInDateTime")
+
+        #Handle accounts that have never signed in (considered inactive)
+        if not last_sign_in_raw:
+            inactive_users.append(u)
+            #User is inactive. Skip the code below and continue to the next record.
+            continue
+
+        try:
+            #Replace the UTC 'Z' indicator for ISO compatibility
+            clean_datetime = last_sign_in_raw.replace("Z", "+00:00")
+            sign_in_date = datetime.fromisoformat(clean_datetime).date()
+
+            if sign_in_date < threshold_date:
+                inactive_users.append(u)
+        except (ValueError, TypeError):
+            #Safe fallback - the user's datetime is invalid. Do nothing and continue to the next record.
+            continue
+
+    return inactive_users
 
