@@ -52,7 +52,7 @@ def normalize_devices(raw_data):
     return normalized
 
 
-def filter_users(records, search_term):
+def filter_users(records, search_term=None):
     """Filters a list of normalized users by display name or UPN."""
     if not search_term:
         return records

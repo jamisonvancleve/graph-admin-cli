@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 #Debug Flag - without an Entra P1/P2 license, the attempt to fetch user data will generate errors and warnings
 #Set ATTEMPT_SIGNINACTIVITY to False to bypass Attempt 1 and supress errors and warning
-ATTEMPT_SIGNINACTIVITY = False
+ATTEMPT_SIGNINACTIVITY = True
 
 #Set base URL for endpoint
 graph_base_url = "https://graph.microsoft.com/v1.0"
@@ -70,7 +70,7 @@ def _fetch_graph_resource(resource_type,params=None):
     endpoint = f"{graph_base_url}/{resource_type.lstrip('/')}"
 
     try:
-        #Send request to endpoing (pass params directly to request.get())
+        #Send request to endpoing (pass params directly to requests.get())
         response = requests.get(endpoint, headers=headers, params=params,timeout=10)
         response.raise_for_status()
 
