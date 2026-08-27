@@ -3,9 +3,17 @@
 #@patch intercepts calls to standard functions and replaces them with fakes.
 #MagicBlock creates flexible dummy objects that mimic real HTTP responses
 
+import os
+from dotenv import load_dotenv
 import requests
 from unittest.mock import patch, MagicMock
 from app.api import get_users
+
+#Load environment variable
+load_dotenv()
+
+#ENABLE_ENTRA_LICENSED_FEATURES Flag
+ENABLE_ENTRA_LICENSED_FEATURES = os.getenv("ENABLE_ENTRA_LICENSED_FEATURES", "false").lower() == "true"
 
 #@patch decorators tells the interpreter, whenerver api.py calls get_graph_token(),
 #do not reach out to Entra. Instead, intercept the traffic and return mock_access_token.
@@ -34,8 +42,15 @@ def test_get_users_403_forbidden_handling(mock_get, mock_token):
     #Assertions
     assert result is None
 
-    #Called twice: once for primary query and once for fallback query (in api.py\get_users())
-    assert mock_get.call_count == 2
+
+    if ENABLE_ENTRA_LICENSED_FEATURES:
+        #Called twice: once for primary query and once for fallback query (in api.py\get_users())
+        expected_call_count = 2
+    else:
+        #Called once: ENABLE_ENTRA_LICENSED_FEATURES is False, which means will will only use the fallback query
+        expected_call_count = 1
+
+    assert mock_get.call_count == expected_call_count
 
 
 

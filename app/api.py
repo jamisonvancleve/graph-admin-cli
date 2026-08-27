@@ -1,5 +1,7 @@
 #api.py handles making HTTP requests to Graph
 
+import os
+from dotenv import load_dotenv
 import requests
 import logging
 import requests.exceptions
@@ -8,9 +10,16 @@ from app.auth import get_graph_token
 #Create a logger object for this module
 logger = logging.getLogger(__name__)
 
-#Debug Flag - without an Entra P1/P2 license, the attempt to fetch user data will generate errors and warnings
-#Set ATTEMPT_SIGNINACTIVITY to False to bypass Attempt 1 and supress errors and warning
-ATTEMPT_SIGNINACTIVITY = True
+#Load environment variable
+load_dotenv()
+
+#ENABLE_ENTRA_LICENSED_FEATURES Flag
+#Without an Entra P1/P2 license, the attempt to fetch user data will generate errors and warnings
+#Set ENABLE_ENTRA_LICENSED_FEATURES in .env to False to bypass Attempt 1 and supress errors and warning
+#Set ENABLE_ENTRA_LICENSED_FEATURES in .env to True to use Entra Licensed Features
+#Note: the variable is storing a string "True" or "False". When the variable is retrieved, a comparison is made which
+#  will evaludate to a boolean True or False. Case does not matter as the comparison is made using .lower()
+ENABLE_ENTRA_LICENSED_FEATURES = os.getenv("ENABLE_ENTRA_LICENSED_FEATURES", "false").lower() == "true"
 
 #Set base URL for endpoint
 graph_base_url = "https://graph.microsoft.com/v1.0"
@@ -25,14 +34,14 @@ def get_users():
     fallback_params ={"$select": "id,displayName,userPrincipalName,jobTitle,officeLocation,mail,businessPhones,mobilePhone,preferredLanguage,createdDateTime"}
 
     #Attempt 1:  request signInActivity (Entra P1/P2 license required)
-    if ATTEMPT_SIGNINACTIVITY:
+    if ENABLE_ENTRA_LICENSED_FEATURES:
         result = _fetch_graph_resource("users", params=primary_params)
     else:
         result = None
 
     #Attempt 2: fallback to basic attributes if P1/P2 license error occurs
     if result is None:
-        if ATTEMPT_SIGNINACTIVITY:
+        if ENABLE_ENTRA_LICENSED_FEATURES:
             logger.warning("Attempt to fetch user object failed when using primary_params for signInActivity. Likely missing an Entra P1/P2 license. Executing fallback query.")
         result = _fetch_graph_resource("users", params=fallback_params)
 
