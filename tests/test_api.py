@@ -52,7 +52,17 @@ def test_get_users_403_forbidden_handling(mock_get, mock_token):
 
     assert mock_get.call_count == expected_call_count
 
+def test_get_users_auth_failure():
+    #Verify the function returns None and that requests.get is never called
+    pass
 
+def test_get_users_429_throttling():
+    #Simulate a 429 response and verify the HTTP exception is handled gracefully
+    pass
+
+def test_fetch_graph_resource_timeout():
+    #Raise a mock timeout error and verify the function handles it gracefully.
+    pass
 
 
 

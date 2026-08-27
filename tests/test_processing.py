@@ -32,3 +32,25 @@ def test_filter_users_case_insensitive():
     assert len(filtered_users) == 2
     assert filtered_users[0]["display_name"] == "Alice Smith"
 
+def test_normalize_devices_extracts_core_fields():
+    #Pass a raw Graph API payload to verify standard key mapping, and missing field fallbacks
+    pass
+
+def test_filter_devices_multi_attribute():
+    #Test filtering device lists across display_name, id, and device_id to ensure mutli-field lookups match correctly
+    pass
+
+def test_get_inactive_users_threshold():
+    #Test the function returns only records older than the cutoff.
+    #Send sample user records with fixed lastSignInDateTime timestamps (dynamically calculated)
+    pass
+
+def test_get_inactive_users_missing_timestamp():
+    #Test how the function handles records with missing SignInActivity keys or None values
+    pass
+
+def test_format_as_csv_valid_output():
+    #Verify output contains expected headers and properly formatted fields.
+    #Send a list of normalized dictionaries
+    pass
+
