@@ -1,7 +1,13 @@
+# processing.py handles data normalization, filtering, inactivity calculations, and export formatting
+
 from datetime import date, timedelta, datetime
 import json
 import csv
 import io
+import logging
+
+# Initialize logger object for this module
+logger = logging.getLogger(__name__)
 
 def normalize_users(raw_data):
     """Normalizes raw data payload from Microsoft Graph API"""
@@ -28,6 +34,7 @@ def normalize_users(raw_data):
             "signInActivity": user.get("signInActivity"),
         })
 
+    logger.debug(f"Normalized {len(normalized)} user records.")
     return normalized
 
 
@@ -49,34 +56,41 @@ def normalize_devices(raw_data):
             "operating_system_version": device.get("operatingSystemVersion") or "N/A",
         })
 
+    logger.debug(f"Normalized {len(normalized)} device records.")
     return normalized
 
 
 def filter_users(records, search_term=None):
     """Filters a list of normalized users by display name or UPN."""
     if not search_term:
+        logger.debug("No search term provided. Returning records unmodified.")
         return records
 
     term = search_term.lower()
-    return [
+    filtered = [
         u for u in records
             if term in u.get("display_name", "").lower()
             or term in u.get("user_principal_name", "").lower()
         ]
+    logger.debug(f"Filtered users matching '{search_term}': {len(filtered)} records remaining.")
+    return filtered
 
 
 def filter_devices(records, search_term):
     """Filters a list of normalized devices by display name, ID, or device ID."""
     if not search_term:
+        logger.debug("No search term provided. Returning records unmodified.")
         return records
 
     term = search_term.lower()
-    return [
+    filtered = [
         d for d in records
         if term in d.get("display_name", "").lower()
         or term in d.get("id", "").lower()
         or term in d.get("device_id", "").lower()
     ]
+    logger.debug(f"Filtered devices matching '{search_term}': {len(filtered)} records remaining.")
+    return filtered
 
 
 def get_inactive_users(records, days_threshold):
@@ -87,6 +101,7 @@ def get_inactive_users(records, days_threshold):
     """
     #Calculate the threshold date
     threshold_date = date.today() - timedelta(days=days_threshold)
+    logger.debug(f"Calculating inactive users for {days_threshold} days threshold (cutoff date = {threshold_date}).")
 
     #Initialize the
     inactive_users = []
@@ -111,10 +126,13 @@ def get_inactive_users(records, days_threshold):
 
             if sign_in_date < threshold_date:
                 inactive_users.append(u)
+
         except (ValueError, TypeError):
             #Safe fallback - the user's datetime is invalid. Do nothing and continue to the next record.
+            logger.warning(f"Failed to parse timestamp {last_sign_in_raw} for user {u.get('user_principal_name')}. Error: {err}")
             continue
 
+    logger.debug(f"Found {len(inactive_users)} inactive users out of {len(records)} records.")
     return inactive_users
 
 
@@ -123,6 +141,7 @@ def format_as_csv(records):
 
     #Handle an empty records
     if not records:
+        logger.warning("Empty records parameter passed to format_as_csv.")
         return ""
 
     #Create an in-memory string buffer to generate a CSV in memory
@@ -130,6 +149,9 @@ def format_as_csv(records):
 
     #Define the column headers using the dictionary keys
     fieldnames = list(records[0].keys())
+
+    #Debug log
+    logger.debug(f"Formatting {len(records)} records to CSV with headers: {fieldnames}")
 
     #Configure the writer object
     writer = csv.DictWriter(csv_output, fieldnames=fieldnames)

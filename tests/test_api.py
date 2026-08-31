@@ -1,7 +1,7 @@
-#test_api.py test api.py logic by simulating network traffic.
+#test_api.py - Unit tests for Microsoft Graph API requests using mocked HTTP responses
 #These tests are run offline, without touching Microsoft endpoints
 #@patch intercepts calls to standard functions and replaces them with fakes.
-#MagicBlock creates flexible dummy objects that mimic real HTTP responses
+#MagicMock creates flexible dummy objects that mimic real HTTP responses
 
 import os
 from dotenv import load_dotenv
@@ -52,17 +52,36 @@ def test_get_users_403_forbidden_handling(mock_get, mock_token):
 
     assert mock_get.call_count == expected_call_count
 
-def test_get_users_auth_failure():
-    #Verify the function returns None and that requests.get is never called
-    pass
+# def test_get_users_auth_failure():
+#     #Verify the function returns None and that requests.get is never called
+#     pass
 
-def test_get_users_429_throttling():
+@patch("app.api.ENABLE_ENTRA_LICENSED_FEATURES", False)
+@patch("app.api.get_graph_token", return_value="mock_access_token")
+@patch("app.api.requests.get")
+def test_get_users_429_throttling(mock_get, _mock_token):
     #Simulate a 429 response and verify the HTTP exception is handled gracefully
-    pass
+    mock_response = MagicMock()
+    mock_response.status_code = 429
+    mock_response.headers = {"Retry-After": "30"}
 
-def test_fetch_graph_resource_timeout():
-    #Raise a mock timeout error and verify the function handles it gracefully.
-    pass
+    #Attach HTTPError with response payload to raise_for_status
+    http_error = requests.exceptions.HTTPError("429 Client Error: Too Many Requests")
+    http_error.response = mock_response
+    mock_response.raise_for_status.side_effect = http_error
+
+    mock_get.return_value = mock_response
+
+    #Execute function under test
+    result = get_users()
+
+    #Assertions
+    assert result is None
+    assert mock_get.call_count == 1
+
+# def test_fetch_graph_resource_timeout():
+#     #Raise a mock timeout error and verify the function handles it gracefully.
+#     pass
 
 
 

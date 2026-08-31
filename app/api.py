@@ -1,4 +1,4 @@
-#api.py handles making HTTP requests to Graph
+#api.py handles HTTP GET requests to Microsoft Graph API endpoints using authenticated headers.
 
 import os
 from dotenv import load_dotenv
@@ -37,6 +37,7 @@ def get_users():
     if ENABLE_ENTRA_LICENSED_FEATURES:
         result = _fetch_graph_resource("users", params=primary_params)
     else:
+        logger.info("Skipping primary user query: Entra licensed features are disabled via environment configuration.")
         result = None
 
     #Attempt 2: fallback to basic attributes if P1/P2 license error occurs
@@ -68,7 +69,7 @@ def _fetch_graph_resource(resource_type,params=None):
     graph_token = get_graph_token()
 
     if not graph_token:
-        logger.error("Authentication failed: No access token.")
+        logger.error(f"Authentication failed for resource '{resource_type}': No access token.")
         return None
 
     #Define headers and endpoint URL for request
@@ -78,14 +79,14 @@ def _fetch_graph_resource(resource_type,params=None):
     }
     endpoint = f"{graph_base_url}/{resource_type.lstrip('/')}"
 
+    logger.debug(f"Sending GET request to '{endpoint}' with params: {params}")
+
     try:
         #Send request to endpoing (pass params directly to requests.get())
         response = requests.get(endpoint, headers=headers, params=params,timeout=10)
         response.raise_for_status()
 
-        #Debug print
-        #print(response.json())
-
+        logger.debug(f"Raw Graph API response payload for '{resource_type}': {response.json()}")
         return response.json()
 
     except requests.exceptions.Timeout:

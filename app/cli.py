@@ -1,38 +1,47 @@
-import argparse
-import logging
-import json
+#cli.py handles command-line argument parsing, subcommand routing, and data presentation
 
-#import sys
+import argparse
+import json
+import logging
 from app.api import get_users, get_devices
 from app.processing import normalize_users, normalize_devices, filter_users, filter_devices, get_inactive_users, format_as_csv
 
+#Create a logger object for this module
+logger = logging.getLogger(__name__)  # NEW: Initialize module logger
+
 def handle_user_command(args):
     """Handler function for the user subcommand"""
-    #Debug print
-    #print("args passed to handle_user_command: ", args)
+    logger.info("Handling 'user' command execution.")
 
     #Retrieve all users from Microsoft Graph
     raw_data = get_users()
     if raw_data is None:
+        logger.warning("Failed to retrieve user data from Microsoft Graph API.")
         print("Failed to retrieve user data from Microsoft Graph.")
         return
 
     #Normalize raw data into clean dictionary object
     records = normalize_users(raw_data)
+    logger.debug(f"Normalized {len(records)} raw user records.")
 
     #Filter results (if args.search was specified by the script executor)
-    records = filter_users(records, args.search)
+    if args.search:
+        records = filter_users(records, args.search)
+        logger.debug(f"Applied search filter '{args.search}': {len(records)} users remaining.")
 
     #Find inactive users (if args.inactive_days was specified by the script executor)
     #If no value is specified for --inactive-days, it defaults to 90
     if args.inactive_days is not None:
         records = get_inactive_users(records, args.inactive_days)
+        logger.debug(f"Applied inactivity filter ({args.inactive_days} days): {len(records)} users remaining.")
 
     #Apply limit (default is 25, so there will always be a value to apply)
     records = records[:args.limit]
+    logger.debug(f"Applied record limit ({args.limit}): {len(records)} users remaining.")
 
     #Apply output formatting (default is text)
     if not records:
+        logger.info("No records found.")
         print("No records found.")
         return
 
@@ -61,32 +70,38 @@ def handle_user_command(args):
             print(format_as_csv(records))
 
         case _:
+            logger.error(f"Unknown format: {args.format}.")
             print(f"Unknown format: {args.format}.")
 
 
 def handle_device_command(args):
     """Handler function for the device subcommand"""
-    #Debug print
-    #print("args passed to handle_device_command: ", args)
+    logger.info("Handling 'device' command execution.")
 
     #Rertieve all devices from Microsoft Graph
     raw_data = get_devices()
     if raw_data is None:
+        logger.warning("Failed to retrieve device data from Microsoft Graph API.")
         print("Failed to retrieve device data from Microsoft Graph.")
         return
 
 
     #Normalize raw data into clean dictionary object
     records = normalize_devices(raw_data)
+    logger.debug(f"Normalized {len(records)} raw device records.")
 
     #Filter results (if args.search was specified by the script executor)
-    records = filter_devices(records, args.search)
+    if args.search:
+        records = filter_devices(records, args.search)
+        logger.debug(f"Applied search filter '{args.search}': {len(records)} devices remaining.")
 
     #Apply limit (default is 25, so there will always be a value to apply)
     records = records[:args.limit]
+    logger.debug(f"Applied record limit ({args.limit}): {len(records)} devices remaining.")
 
     # Apply output formatting (default is 'text')
     if not records:
+        logger.info("No records found.")
         print("No records found.")
         return
 
@@ -109,6 +124,7 @@ def handle_device_command(args):
             print(format_as_csv(records))
 
         case _:
+            logger.error(f"Unknown format: {args.format}.")
             print(f"Unknown format: {args.format}.")
 
 def build_parser():
@@ -133,27 +149,25 @@ def build_parser():
 
     #Configure subcommand: device
     device_parser = subparsers.add_parser("device", aliases=["devices"], parents=[parent_parser], help="Manage device objects")
-    device_parser.add_argument("--search", help="Filter devices by display name")
+    device_parser.add_argument("--search", help="Filter devices by display name, ID, or device ID")
     device_parser.set_defaults(func=handle_device_command)
 
     return parser
 
 
 def run():
-    """Function to run the cli parser"""
-
+    """Main cli.py entry point, invoked by main.py"""
     parser = build_parser()
     args = parser.parse_args()
-
-    #Debug print
-    #print("args namespace: ",args)
 
     #Route the execution to assigned handler function.
     if hasattr(args, "func"):
         #If the args namespace contains the 'func' attribute, args.func(args) calls the stored function
+        logger.info(f"Executing command '{args.command}' with options: search={getattr(args, 'search', None)}, limit={args.limit}, format={args.format}")
         args.func(args)
     else:
         #If the args namespace does not contain a 'func' attribute, display help.
         #(The script executor did not specify a proper subcommand)
+        logger.warning("CLI executed without a subcommand. Printing help menu.")
         parser.print_help()
 

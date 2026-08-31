@@ -219,3 +219,9 @@ __marimo__/
 
 # Custom exclusions
 .backups/
+app/__pycache__
+tests/__pycache__
+logs/
+*.log
+graph_token
+**/__pycache__/
