@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 import requests
 import logging
 import requests.exceptions
+from urllib.parse import quote
 from app.auth import get_graph_token
 
 #Create a logger object for this module
@@ -122,5 +123,20 @@ def _fetch_graph_resource(resource_type,params=None):
         logger.error(f"Unexpceted error: {err}")
         return None
 
+def get_user_by_id(user_id_or_upn: str):
+    """Fetches user data for a single user by Object ID or UPN."""
+    encoded_user_id_or_upn = quote(user_id_or_upn, safe="")
+    params = {"$select": "id,displayName,userPrincipalName,jobTitle,officeLocation,mail,businessPhones,mobilePhone,preferredLanguage,createdDateTime"}
 
+    return _fetch_graph_resource(f"users/{encoded_user_id_or_upn}", params=params)
+
+def get_user_group_membership(user_id_or_upn: str):
+    """Fetches group membership for a specific user."""
+    encoded_user_id_or_upn = quote(user_id_or_upn, safe="")
+    return _fetch_graph_resource(f"users/{encoded_user_id_or_upn}/memberOf")
+
+def get_user_manager(user_id_or_upn: str):
+    """Fetches the managedBy field for a specific user."""
+    encoded_user_id_or_upn = quote(user_id_or_upn, safe="")
+    return _fetch_graph_resource(f"users/{encoded_user_id_or_upn}/manager")
 

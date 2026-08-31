@@ -3,7 +3,7 @@
 import argparse
 import json
 import logging
-from app.api import get_users, get_devices
+from app.api import get_users, get_devices, get_user_by_id, get_user_group_membership, get_user_manager
 from app.processing import normalize_users, normalize_devices, filter_users, filter_devices, get_inactive_users, format_as_csv
 
 #Create a logger object for this module
@@ -13,31 +13,69 @@ def handle_user_command(args):
     """Handler function for the user subcommand"""
     logger.info("Handling 'user' command execution.")
 
-    #Retrieve all users from Microsoft Graph
-    raw_data = get_users()
-    if raw_data is None:
-        logger.warning("Failed to retrieve user data from Microsoft Graph API.")
-        print("Failed to retrieve user data from Microsoft Graph.")
-        return
+    if args.id:
+        #Script executor has included the --id parameter. Fetching data for a single user
+        raw_user = get_user_by_id(args.id)
 
-    #Normalize raw data into clean dictionary object
-    records = normalize_users(raw_data)
-    logger.debug(f"Normalized {len(records)} raw user records.")
+        if not raw_user:
+            logger.warning(f"Failed to retrieve user data for ID: {args.id}")
+            print(f"Failed to retrieve user data for ID: '{args.id}'.")
+            return
 
-    #Filter results (if args.search was specified by the script executor)
-    if args.search:
-        records = filter_users(records, args.search)
-        logger.debug(f"Applied search filter '{args.search}': {len(records)} users remaining.")
+        #The normalize_users() function expects a dictionatry. Wrap raw_user in a dict if it is not already
+        if isinstance(raw_user, dict):
+            records = normalize_users([raw_user])
+        else:
+            records = normalize_users(raw_user)
 
-    #Find inactive users (if args.inactive_days was specified by the script executor)
-    #If no value is specified for --inactive-days, it defaults to 90
-    if args.inactive_days is not None:
-        records = get_inactive_users(records, args.inactive_days)
-        logger.debug(f"Applied inactivity filter ({args.inactive_days} days): {len(records)} users remaining.")
+        #Retrieve group membership
+        if args.groups:
+            user_groups = get_user_group_membership(args.id)
+            if records and isinstance(records[0], dict):
+                records[0]["groups"] = user_groups
 
-    #Apply limit (default is 25, so there will always be a value to apply)
-    records = records[:args.limit]
-    logger.debug(f"Applied record limit ({args.limit}): {len(records)} users remaining.")
+        #Retrieve user's managedBy field
+        if args.manager:
+            user_manager = get_user_manager(args.id)
+            if records and isinstance(records[0], dict):
+                records[0]["manager"] = user_manager
+
+        #Render output for single user
+        _render_user_output(records, args.format)
+
+    else:
+        #Retrieve all users from Microsoft Graph
+        raw_data = get_users()
+
+        if raw_data is None:
+            logger.warning("Failed to retrieve user data from Microsoft Graph API.")
+            print("Failed to retrieve user data from Microsoft Graph.")
+            return
+
+        #Normalize raw data into clean dictionary object
+        records = normalize_users(raw_data)
+        logger.debug(f"Normalized {len(records)} raw user records.")
+
+        #Filter results (if args.search was specified by the script executor)
+        if args.search:
+            records = filter_users(records, args.search)
+            logger.debug(f"Applied search filter '{args.search}': {len(records)} users remaining.")
+
+        #Find inactive users (if args.inactive_days was specified by the script executor)
+        #If no value is specified for --inactive-days, it defaults to 90
+        if args.inactive_days is not None:
+            records = get_inactive_users(records, args.inactive_days)
+            logger.debug(f"Applied inactivity filter ({args.inactive_days} days): {len(records)} users remaining.")
+
+        #Apply limit (default is 25, so there will always be a value to apply)
+        records = records[:args.limit]
+        logger.debug(f"Applied record limit ({args.limit}): {len(records)} users remaining.")
+
+        #Render output for multiple users
+        _render_user_output(records, args.format)
+
+def _render_user_output(records, format_type):
+    """Helper function to render output"""
 
     #Apply output formatting (default is text)
     if not records:
@@ -45,7 +83,7 @@ def handle_user_command(args):
         print("No records found.")
         return
 
-    match args.format:
+    match format_type:
         case "json":
             print(json.dumps(records, indent=2))
 
@@ -53,16 +91,41 @@ def handle_user_command(args):
             for user in records:
                 last_sign_in_date = (user.get('signInActivity') or {}).get('lastSignInDateTime') or "N/A"
                 print(f"{user.get('display_name')}:"
-                      f"\n\tdisplay_name: {user.get('display_name')}"
-                      f"\n\tUPN: {user.get('user_principal_name')}"
-                      f"\n\tid: {user.get('id')}"
-                      f"\n\tjob_title: {user.get('job_title')}"
-                      f"\n\toffice_location: {user.get('office_location')}"
-                      f"\n\temail: {user.get('email')}"
-                      f"\n\tbusiness_phones: {user.get('business_phones')}"
-                      f"\n\tmobile_phone: {user.get('mobile_phone')}"
-                      f"\n\tpreferred_language: {user.get('preferred_language')}"
-                      f"\n\tlastSignInDateTime: {last_sign_in_date}")
+                      f"\tdisplay_name: {user.get('display_name')}"
+                      f"\tUPN: {user.get('user_principal_name')}"
+                      f"\tid: {user.get('id')}"
+                      f"\tjob_title: {user.get('job_title')}"
+                      f"\toffice_location: {user.get('office_location')}"
+                      f"\temail: {user.get('email')}"
+                      f"\tbusiness_phones: {user.get('business_phones')}"
+                      f"\tmobile_phone: {user.get('mobile_phone')}"
+                      f"\tpreferred_language: {user.get('preferred_language')}"
+                      f"\tlastSignInDateTime: {last_sign_in_date}")
+
+                if "manager" in user:
+                    manager_name = (user["manager"] or {}).get("displayName", "None assigned")
+                    print(f"\tmanager: {manager_name}")
+
+                if "groups" in user:
+                    print("\tdirectory roles and groups:")
+                    memberships = (user["groups"] or {}).get("value", [])
+
+                    if memberships:
+                        for item in memberships:
+                            # Determine type from @odata.type key
+                            odata_type = item.get("@odata.type", "")
+                            if "#microsoft.graph.directoryRole" in odata_type:
+                                tag = "[role]"
+                            elif "#microsoft.graph.group" in odata_type:
+                                tag = "[group]"
+                            else:
+                                tag = "[membership]"
+
+                            display_name = item.get("displayName", "N/A")
+                            item_id = item.get("id", "N/A")
+                            print(f"\t\t- {tag} {display_name} ({item_id})")
+                    else:
+                        print("\t\t- No group or role memberships found")
 
             print(f"\nTotal users returned: {len(records)}")
 
@@ -72,7 +135,6 @@ def handle_user_command(args):
         case _:
             logger.error(f"Unknown format: {args.format}.")
             print(f"Unknown format: {args.format}.")
-
 
 def handle_device_command(args):
     """Handler function for the device subcommand"""
@@ -146,6 +208,10 @@ def build_parser():
     user_parser.add_argument("--search", help="Filter users by display name or UPN")
     user_parser.add_argument("--inactive-days", nargs="?", type=int, const=90, default=None, help="Threshold for inactive users (default = 90 days)")
     user_parser.set_defaults(func=handle_user_command)
+
+    user_parser.add_argument("--id", help="Target user ID or UPN for detailed lookup")
+    user_parser.add_argument("--groups", action="store_true", help="Include user group memberships")
+    user_parser.add_argument("--manager", action="store_true", help="Include user manager details")
 
     #Configure subcommand: device
     device_parser = subparsers.add_parser("device", aliases=["devices"], parents=[parent_parser], help="Manage device objects")
