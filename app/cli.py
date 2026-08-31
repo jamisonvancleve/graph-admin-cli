@@ -178,7 +178,8 @@ def handle_device_command(args):
                       f"\n\tid: {device.get('id')}"
                       f"\n\tdevice_id: {device.get('device_id')}"
                       f"\n\toperating_system: {device.get('operating_system')}"
-                      f"\n\toperating_system_version: {device.get('operating_system_version')}")
+                      f"\n\toperating_system_version: {device.get('operating_system_version')}"
+                      f"\n\ttrust_type: {device.get('trust_type')}")
 
             print(f"\nTotal devices returned: {len(records)}")
 

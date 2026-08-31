@@ -54,6 +54,7 @@ def normalize_devices(raw_data):
             "display_name": device.get("displayName") or "N/A",
             "operating_system": device.get("operatingSystem") or "N/A",
             "operating_system_version": device.get("operatingSystemVersion") or "N/A",
+            "trust_type": device.get("trustType") or "N/A",
         })
 
     logger.debug(f"Normalized {len(normalized)} device records.")

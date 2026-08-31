@@ -61,7 +61,7 @@ def get_users():
 def get_devices():
     """Fetches device objects from Microsoft Graph API"""
     #We must use the select clause to retrieve users. Therefore, we use it for devices to remain consistent and allow for future customization
-    params = {"$select": "id,deviceId,displayName,operatingSystem,operatingSystemVersion"}
+    params = {"$select": "id,deviceId,displayName,operatingSystem,operatingSystemVersion,trustType"}
     return _fetch_graph_resource("devices", params=params)
 
 def _fetch_graph_resource(resource_type,params=None):
