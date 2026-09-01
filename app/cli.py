@@ -3,6 +3,7 @@
 import argparse
 import json
 import logging
+import sys
 from app.api import get_users, get_devices, get_user_by_id, get_user_group_membership, get_user_manager, update_user_usage_location
 from app.processing import normalize_users, normalize_devices, filter_users, filter_devices, get_inactive_users, format_as_csv, validate_country_code
 
@@ -19,13 +20,13 @@ def handle_user_command(args):
         if not args.id:
             logger.warning("Attempted --usage-location update without providing --id.")
             print("Error: You must specify --id <user-id-or-upn> to update usage location.")
-            return
+            sys.exit(1)
 
         #Pre-flight data validation
         country_code = validate_country_code(args.usage_location)
         if not country_code:
             print(f"Error: '{args.usage_location}' is not a valid 2-letter ISO country code (e.g., 'US', 'CA', 'GB').")
-            return
+            sys.exit(1)
 
         #Attempt to update usage location
         success = update_user_usage_location(args.id, args.usage_location)
@@ -36,7 +37,7 @@ def handle_user_command(args):
             logger.error(f"Failed to update usageLocation for user '{args.id}'")
             print(f"Failed to update usage location for '{args.id}'. Check logs for details.")
 
-        return
+        sys.exit(1)
 
     #### Read Operations ####
     if args.id:
@@ -46,7 +47,7 @@ def handle_user_command(args):
         if not raw_user:
             logger.warning(f"Failed to retrieve user data for ID: {args.id}")
             print(f"Failed to retrieve user data for ID: '{args.id}'.")
-            return
+            sys.exit(1)
 
         #The normalize_users() function expects a dictionatry. Wrap raw_user in a dict if it is not already
         if isinstance(raw_user, dict):
@@ -76,7 +77,7 @@ def handle_user_command(args):
         if raw_data is None:
             logger.warning("Failed to retrieve user data from Microsoft Graph API.")
             print("Failed to retrieve user data from Microsoft Graph.")
-            return
+            sys.exit(1)
 
         #Normalize raw data into clean dictionary object
         records = normalize_users(raw_data)
@@ -162,6 +163,7 @@ def _render_user_output(records, format_type):
         case _:
             logger.error(f"Unknown format: {args.format}.")
             print(f"Unknown format: {args.format}.")
+            sys.exit(1)
 
 def handle_device_command(args):
     """Handler function for the device subcommand"""
@@ -172,7 +174,7 @@ def handle_device_command(args):
     if raw_data is None:
         logger.warning("Failed to retrieve device data from Microsoft Graph API.")
         print("Failed to retrieve device data from Microsoft Graph.")
-        return
+        sys.exit(1)
 
 
     #Normalize raw data into clean dictionary object
@@ -265,4 +267,5 @@ def run():
         #(The script executor did not specify a proper subcommand)
         logger.warning("CLI executed without a subcommand. Printing help menu.")
         parser.print_help()
+        sys.exit(1)
 

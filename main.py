@@ -29,6 +29,7 @@ if __name__ == "__main__":
     try:
         run_cli()
         logger.info("Graph Admin CLI application completed successfully.")
+        sys.exit(0)
 
     except Exception as e:
         logger.critical(f"Unhandled application crash: {e}", exc_info=True)
