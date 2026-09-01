@@ -31,8 +31,8 @@ def get_users():
 
     #The select clause must be built because we need the signInActivity field, which is not included in the default response
     #Since the signInActivity field requires an Entra P1/P2 license, we will attempt to use it. If it fails, we will fall back to using createdDateTime.
-    primary_params = {"$select": "id,displayName,userPrincipalName,jobTitle,officeLocation,mail,businessPhones,mobilePhone,preferredLanguage,signInActivity"}
-    fallback_params ={"$select": "id,displayName,userPrincipalName,jobTitle,officeLocation,mail,businessPhones,mobilePhone,preferredLanguage,createdDateTime"}
+    primary_params = {"$select": "id,displayName,userPrincipalName,jobTitle,officeLocation,mail,businessPhones,mobilePhone,preferredLanguage,usageLocation,signInActivity"}
+    fallback_params ={"$select": "id,displayName,userPrincipalName,jobTitle,officeLocation,mail,businessPhones,mobilePhone,preferredLanguage,usageLocation,createdDateTime"}
 
     #Attempt 1:  request signInActivity (Entra P1/P2 license required)
     if ENABLE_ENTRA_LICENSED_FEATURES:
@@ -126,7 +126,7 @@ def _fetch_graph_resource(resource_type,params=None):
 def get_user_by_id(user_id_or_upn: str):
     """Fetches user data for a single user by Object ID or UPN."""
     encoded_user_id_or_upn = quote(user_id_or_upn, safe="")
-    params = {"$select": "id,displayName,userPrincipalName,jobTitle,officeLocation,mail,businessPhones,mobilePhone,preferredLanguage,createdDateTime"}
+    params = {"$select": "id,displayName,userPrincipalName,jobTitle,officeLocation,mail,businessPhones,mobilePhone,preferredLanguage,usageLocation,createdDateTime"}
 
     return _fetch_graph_resource(f"users/{encoded_user_id_or_upn}", params=params)
 
@@ -140,3 +140,23 @@ def get_user_manager(user_id_or_upn: str):
     encoded_user_id_or_upn = quote(user_id_or_upn, safe="")
     return _fetch_graph_resource(f"users/{encoded_user_id_or_upn}/manager")
 
+
+def update_user_usage_location(user_id_or_upn: str, country_code: str):
+    """Updates the usageLocation attribute for a specific user."""
+    encoded_user_id_or_upn = quote(user_id_or_upn, safe="")
+    graph_token = get_graph_token()
+    headers = {
+        "Authorization": f"Bearer {graph_token}",
+        "Content-Type": "application/json"
+    }
+    endpoint = f"https://graph.microsoft.com/v1.0/users/{encoded_user_id_or_upn}"
+    payload = {"usageLocation": country_code.upper()}
+
+    #Use requests.patch to update a single user record
+    response = requests.patch(endpoint, headers=headers, json=payload, timeout=10)
+
+    if response.status_code == 204:
+        return True
+
+    logger.error(f"Failed to update usageLocation: {response.status_code} - {response.text}")
+    return False

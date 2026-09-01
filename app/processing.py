@@ -32,6 +32,7 @@ def normalize_users(raw_data):
             "mobile_phone": user.get("mobilePhone") or "N/A",
             "preferred_language": user.get("preferredLanguage") or "N/A",
             "signInActivity": user.get("signInActivity"),
+            "usage_location": user.get("usageLocation"),
         })
 
     logger.debug(f"Normalized {len(normalized)} user records.")
@@ -174,3 +175,21 @@ def format_as_csv(records):
         writer.writerow(flattened_row)
 
     return csv_output.getvalue().strip()
+
+def validate_country_code(country_code: str) -> str | None:
+    """
+    Validates the 2-letter ISO 3166-1 alpha-2 country code used for Entra Usage Location.
+    List of valid codes: https://en.wikipedia.org/wiki/ISO_3166-1
+    """
+    if not country_code or not isinstance(country_code, str):
+        logger.warning("Empty or non-string country code provided for validation.")
+        return None
+
+    clean_code = country_code.strip().upper()
+
+    # Validate strict 2-letter alphabetical format (ISO 3166-1 alpha-2)
+    if len(clean_code) == 2 and clean_code.isalpha():
+        return clean_code
+
+    logger.warning(f"Country code validation failed for input: '{code}'")
+    return None

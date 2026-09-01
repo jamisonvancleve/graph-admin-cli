@@ -3,8 +3,8 @@
 import argparse
 import json
 import logging
-from app.api import get_users, get_devices, get_user_by_id, get_user_group_membership, get_user_manager
-from app.processing import normalize_users, normalize_devices, filter_users, filter_devices, get_inactive_users, format_as_csv
+from app.api import get_users, get_devices, get_user_by_id, get_user_group_membership, get_user_manager, update_user_usage_location
+from app.processing import normalize_users, normalize_devices, filter_users, filter_devices, get_inactive_users, format_as_csv, validate_country_code
 
 #Create a logger object for this module
 logger = logging.getLogger(__name__)  # NEW: Initialize module logger
@@ -13,6 +13,32 @@ def handle_user_command(args):
     """Handler function for the user subcommand"""
     logger.info("Handling 'user' command execution.")
 
+    #### Write Operations ####
+    #Set Usage Location for a specific user
+    if args.usage_location:
+        if not args.id:
+            logger.warning("Attempted --usage-location update without providing --id.")
+            print("Error: You must specify --id <user-id-or-upn> to update usage location.")
+            return
+
+        #Pre-flight data validation
+        country_code = validate_country_code(args.usage_location)
+        if not country_code:
+            print(f"Error: '{args.usage_location}' is not a valid 2-letter ISO country code (e.g., 'US', 'CA', 'GB').")
+            return
+
+        #Attempt to update usage location
+        success = update_user_usage_location(args.id, args.usage_location)
+        if success:
+            logger.info(f"Successfully updated usageLocation to '{args.usage_location.upper()}' for '{args.id}'")
+            print(f"Successfully updated usageLocation to '{args.usage_location.upper()}' for user '{args.id}'.")
+        else:
+            logger.error(f"Failed to update usageLocation for user '{args.id}'")
+            print(f"Failed to update usage location for '{args.id}'. Check logs for details.")
+
+        return
+
+    #### Read Operations ####
     if args.id:
         #Script executor has included the --id parameter. Fetching data for a single user
         raw_user = get_user_by_id(args.id)
@@ -91,23 +117,24 @@ def _render_user_output(records, format_type):
             for user in records:
                 last_sign_in_date = (user.get('signInActivity') or {}).get('lastSignInDateTime') or "N/A"
                 print(f"{user.get('display_name')}:"
-                      f"\tdisplay_name: {user.get('display_name')}"
-                      f"\tUPN: {user.get('user_principal_name')}"
-                      f"\tid: {user.get('id')}"
-                      f"\tjob_title: {user.get('job_title')}"
-                      f"\toffice_location: {user.get('office_location')}"
-                      f"\temail: {user.get('email')}"
-                      f"\tbusiness_phones: {user.get('business_phones')}"
-                      f"\tmobile_phone: {user.get('mobile_phone')}"
-                      f"\tpreferred_language: {user.get('preferred_language')}"
-                      f"\tlastSignInDateTime: {last_sign_in_date}")
+                      f"\n\tdisplay_name: {user.get('display_name')}"
+                      f"\n\tUPN: {user.get('user_principal_name')}"
+                      f"\n\tid: {user.get('id')}"
+                      f"\n\tjob_title: {user.get('job_title')}"
+                      f"\n\toffice_location: {user.get('office_location')}"
+                      f"\n\temail: {user.get('email')}"
+                      f"\n\tbusiness_phones: {user.get('business_phones')}"
+                      f"\n\tmobile_phone: {user.get('mobile_phone')}"
+                      f"\n\tpreferred_language: {user.get('preferred_language')}"
+                      f"\n\tusage_location: {user.get('usage_location')}"
+                      f"\n\tlastSignInDateTime: {last_sign_in_date}")
 
                 if "manager" in user:
                     manager_name = (user["manager"] or {}).get("displayName", "None assigned")
-                    print(f"\tmanager: {manager_name}")
+                    print(f"\n\tmanager: {manager_name}")
 
                 if "groups" in user:
-                    print("\tdirectory roles and groups:")
+                    print("\n\tdirectory roles and groups:")
                     memberships = (user["groups"] or {}).get("value", [])
 
                     if memberships:
@@ -213,6 +240,7 @@ def build_parser():
     user_parser.add_argument("--id", help="Target user ID or UPN for detailed lookup")
     user_parser.add_argument("--groups", action="store_true", help="Include user group memberships")
     user_parser.add_argument("--manager", action="store_true", help="Include user manager details")
+    user_parser.add_argument("--usage-location", help="Set the 2-letter ISO country code (e.g., US, CA, GB)")
 
     #Configure subcommand: device
     device_parser = subparsers.add_parser("device", aliases=["devices"], parents=[parent_parser], help="Manage device objects")
