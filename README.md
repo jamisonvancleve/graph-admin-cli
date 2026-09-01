@@ -5,8 +5,6 @@ A modular, Python command-line tool for Microsoft Entra ID administration via Mi
 
 <br />
 
-<br />
-
 **Architecture**\
 The modular approach decouples the user interface from API calls and data transformation tasks:
 
@@ -36,8 +34,6 @@ graph-admin-cli/
 
 <br />
 
-<br />
-
 **Prerequisites**\
 Entra ID App Registration
 
@@ -54,12 +50,8 @@ Entra ID App Registration
 
 <br />
 
-<br />
-
 **Entra ID Licensing**\
 A Microsoft Entra ID P1 or P2 license is required to access the signInActivity property. This is used to calculate inactive users. If a license is not assigned, graph-cli-admin will fall back to using createdDateTime. This is not as meaningful, but allows the app to demonstrate the feature.
-
-<br />
 
 <br />
 
@@ -94,8 +86,6 @@ A Microsoft Entra ID P1 or P2 license is required to access the signInActivity p
 
 <br />
 
-<br />
-
 **Usage Examples**\
 Execute commands directly using main.py
 
@@ -110,19 +100,19 @@ Query Devices\
 <br />
 
 Optional Global Parameters\
-`-h, --help`\
-`--format`\
-`--limit`\
-`--search`
+`-h, --help      show this help message and exit`\
+`--format        Select output format {text,json,csv}`\
+`--limit         Maximum number of records to return (default = 25)`\
+`--search        Filter users by display name or UPN`\
+`--inactive-days Threshold for inactive users (default = 90 days)`
 
 <br />
 
 Optional User Parameters\
-`--inactive-days`\
-`--id`\
-`--groups`\
-`--manager`\
-`--usage-location`
+`--id ID           Target user ID or UPN for detailed lookup`\
+`--groups          Include user group memberships`\
+`--manager         Include user manager details`\
+`--usage-location  Set the 2-letter ISO country code (e.g., US, CA, GB)`
 
 <br />
 
