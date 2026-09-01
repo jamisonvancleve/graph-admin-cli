@@ -1,4 +1,4 @@
-#api.py handles HTTP GET requests to Microsoft Graph API endpoints using authenticated headers.
+#api.py handles HTTP requests to Microsoft Graph API endpoints using authenticated headers.
 
 import os
 from dotenv import load_dotenv

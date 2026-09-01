@@ -186,7 +186,7 @@ cython_debug/
 #   be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
 #   and can be added to the global gitignore or merged into this file.  For a more nuclear
 #   option (not recommended) you can uncomment the following to ignore the entire idea folder.
-# .idea/
+.idea/
 
 # Abstra
 #   Abstra is an AI-powered process automation framework.
@@ -219,9 +219,12 @@ __marimo__/
 
 # Custom exclusions
 .backups/
-app/__pycache__
-tests/__pycache__
-logs/
-*.log
-graph_token
 **/__pycache__/
+#rule above covers app/__pycache__ and tests/__pycache__
+logs/
+#*.log - this pattern already covered above
+graph_token
+.DS_Store
+Thumbs.db
+desktop.ini
+

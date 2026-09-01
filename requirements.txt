@@ -1,8 +1,8 @@
-# API Integration
-requests
+#API Integration
+requests>=2.31.0
 
-# Environment Variable Management
-python-dotenv
+#Environment Variable Management
+python-dotenv>=1.0.0
 
-# Testing Framework
-pytest
+#Testing Framework
+pytest>=8.0.0
