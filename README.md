@@ -1,7 +1,9 @@
 # graph-admin-cli
 
 **Microsoft Graph Administration CLI Application**\
-A modular, Python command-line tool for Microsoft Entra ID administration via Microsoft Graph API. Designed for automation and system administration, graph-admin-cli uses OAuth 2.0 client credentials (via an Entra App Registration)to query users and devices.
+A modular, Python command-line tool for Microsoft Entra ID administration via Microsoft Graph API. Designed for automation and system administration, graph-admin-cli uses OAuth 2.0 client credentials (via an Entra App Registration) to query users and devices.
+
+<br />
 
 <br />
 
@@ -23,6 +25,8 @@ graph-admin-cli/
 └── README.md  
 ```
 
+<br />
+
 **Key Features**
 
 * User Management: Query user identities including group membership, manager, and usage location.
@@ -30,7 +34,9 @@ graph-admin-cli/
 * Device Auditing: Query device inventory.
 * Data Processing: Export data directory to json or csv formats.
 
-  <br />
+<br />
+
+<br />
 
 **Prerequisites**\
 Entra ID App Registration
@@ -48,8 +54,12 @@ Entra ID App Registration
 
 <br />
 
+<br />
+
 **Entra ID Licensing**\
 A Microsoft Entra ID P1 or P2 license is required to access the signInActivity property. This is used to calculate inactive users. If a license is not assigned, graph-cli-admin will fall back to using createdDateTime. This is not as meaningful, but allows the app to demonstrate the feature.
+
+<br />
 
 <br />
 
@@ -57,12 +67,14 @@ A Microsoft Entra ID P1 or P2 license is required to access the signInActivity p
 
 1. Clone the repository
 
-   `git clone https://github.com/your-username/graph-admin-cli.git````cd graph-admin-cli`
+   `git clone https://github.com/your-username/graph-admin-cli.git`\
+   `cd graph-admin-cli`
 
 2. Create a virtual environment
 
    `python -m venv .venv`\
-   `source .venv/bin/activate # On Windows: .venv\Scripts\activate`
+   `source .venv/bin/activate `\
+   `#On Windows: source .venv\Scripts\activate`
 
 3. Install dependencies
 
@@ -74,35 +86,48 @@ A Microsoft Entra ID P1 or P2 license is required to access the signInActivity p
 
 5. Open .env and supply the credentials for your tenant
 
-   TENANT\_ID=your-entra-tenant-id
+   `TENANT_ID=your-entra-tenant-id`
 
-   CLIENT\_ID=your-entra-client-id
+   `CLIENT_ID=your-entra-client-id`
 
-   CLIENT\_SECRET=your-entra-client-secret
+   `CLIENT_SECRET=your-entra-client-secret`
+
+<br />
+
+<br />
 
 **Usage Examples**\
-Execute commands directly using main.py\
+Execute commands directly using main.py
+
 Query Users\
-python main.py users
+`python main.py users`
+
+<br />
 
 Query Devices\
-python main.py devices
+`python main.py devices`
+
+<br />
 
 Optional Global Parameters\
--h, --help\
-\--format\
-\--limit\
-\--search
+`-h, --help`\
+`--format`\
+`--limit`\
+`--search`
+
+<br />
 
 Optional User Parameters\
-\--inactive-days\
-\--id\
-\--groups\
-\--manager\
-\--usage-location
+`--inactive-days`\
+`--id`\
+`--groups`\
+`--manager`\
+`--usage-location`
 
-Unit Testing\
-Automated testing is built using pytest:
+<br />
+
+**Unit Testing**\
+Automated testing is built using pytest. Run the commands below to test the app.
 
 <br />
 
@@ -110,9 +135,13 @@ Run the complete test suite
 
 `pytest`
 
+<br />
+
 Run tests with verbose output
 
 `pytest -v`
+
+<br />
 
 Target specific modules
 
