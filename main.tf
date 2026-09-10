@@ -1,25 +1,41 @@
-resource "azurerm_resource_group" "rg" {
-  name     = var.resource_group_name
-  location = var.location
-
+module "networking" {
+  source              = "./modules/networking"
+  resource_group_name = "rg-graph-admin-cli-dev"
+  location            = "eastus"
   tags = {
-    Environment = var.environment
+    Environment = "dev"
     ManagedBy   = "Terraform"
   }
 }
 
-resource "azurerm_virtual_network" "vnet" {
-  name                = "vnet-${var.environment}-001"
-  address_space       = ["10.20.0.0/16"]
-  location            = azurerm_resource_group.rg.location
-  resource_group_name = azurerm_resource_group.rg.name
-
-  tags = azurerm_resource_group.rg.tags
+module "registry" {
+  source              = "./modules/registry"
+  acr_name            = "acrgraphadmincli2026"
+  resource_group_name = module.networking.resource_group_name
+  location            = module.networking.location
+  tags = {
+    Environment = "dev"
+    ManagedBy   = "Terraform"
+  }
 }
 
-resource "azurerm_subnet" "subnet" {
-  name                 = "snet-app-001"
-  resource_group_name  = azurerm_resource_group.rg.name
-  virtual_network_name = azurerm_virtual_network.vnet.name
-  address_prefixes     = ["10.20.1.0/24"]
+# --- State Migration Blocks ---
+moved {
+  from = azurerm_resource_group.rg
+  to   = module.networking.azurerm_resource_group.rg
+}
+
+moved {
+  from = azurerm_virtual_network.vnet
+  to   = module.networking.azurerm_virtual_network.vnet
+}
+
+moved {
+  from = azurerm_subnet.subnet
+  to   = module.networking.azurerm_subnet.subnet
+}
+
+moved {
+  from = azurerm_container_registry.acr
+  to   = module.registry.azurerm_container_registry.acr
 }

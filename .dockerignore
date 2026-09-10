@@ -1,0 +1,22 @@
+# Environment Variables & Secrets
+.env
+graph_token
+
+# Build, Test & Runtime Artifacts
+**/__pycache__/
+.pytest_cache/
+.venv/
+logs/
+*.log
+
+# IDE Configurations
+.idea/
+
+# Git Metadata
+.git/
+.gitignore
+
+# Terraform Infrastructure & State
+.terraform/
+*.tfstate*
+output.txt
