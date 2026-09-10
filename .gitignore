@@ -228,3 +228,9 @@ graph_token
 Thumbs.db
 desktop.ini
 
+# Terraform temporary directories & state
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
+output.txt
