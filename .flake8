@@ -1,0 +1,8 @@
+[flake8]
+exclude =
+    .backups,
+    .venv,
+    .idea,
+    __pycache__,
+    build,
+    dist

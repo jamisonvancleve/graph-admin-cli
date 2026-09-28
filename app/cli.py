@@ -161,8 +161,8 @@ def _render_user_output(records, format_type):
             print(format_as_csv(records))
 
         case _:
-            logger.error(f"Unknown format: {args.format}.")
-            print(f"Unknown format: {args.format}.")
+            logger.error(f"Unknown format: {format_type}.")
+            print(f"Unknown format: {format_type}.")
             sys.exit(1)
 
 def handle_device_command(args):

@@ -129,7 +129,7 @@ def get_inactive_users(records, days_threshold):
             if sign_in_date < threshold_date:
                 inactive_users.append(u)
 
-        except (ValueError, TypeError):
+        except (ValueError, TypeError) as err:
             #Safe fallback - the user's datetime is invalid. Do nothing and continue to the next record.
             logger.warning(f"Failed to parse timestamp {last_sign_in_raw} for user {u.get('user_principal_name')}. Error: {err}")
             continue
@@ -191,5 +191,5 @@ def validate_country_code(country_code: str) -> str | None:
     if len(clean_code) == 2 and clean_code.isalpha():
         return clean_code
 
-    logger.warning(f"Country code validation failed for input: '{code}'")
+    logger.warning(f"Country code validation failed for input: '{country_code}'")
     return None

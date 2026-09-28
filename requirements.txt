@@ -6,3 +6,7 @@ python-dotenv>=1.0.0
 
 #Testing Framework
 pytest>=8.0.0
+
+#Linting
+flake8
+
