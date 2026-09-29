@@ -140,25 +140,20 @@ Optional User Parameters\
 **Unit Testing**\
 Automated testing is built using pytest. Run the commands below to test the app.
 
-<br />
-
 Run the complete test suite
 
-`pytest`
-
-<br />
+  `pytest`
 
 Run tests with verbose output
 
-`pytest -v`
-
-<br />
+  `pytest -v`
 
 Target specific modules
 
-`pytest tests/test_processing.py`
+  `pytest tests/test_processing.py`
 
-#
+
+<br />
 
 
 **Infrastructure as Code (Terraform)**\
@@ -167,24 +162,24 @@ All Azure resources (rg-graph-admin-cli-dev and acrgraphadmincli2026) are declar
 Initialize & Apply Locally
 1. Change directory
 
-`cd terraform`
+    `cd terraform`
 
 2. Initialize state backend
 
-`terraform init`
+    `terraform init`
 
 3. Run speculative execution plan
 
-`terraform plan`
+    `terraform plan`
 
 4. Provision resources
 
-`terraform apply`
+    `terraform apply`
 
 Teardown Cloud Resources
-To prevent unnecessary Azure cloud costs when not actively using:
+* To prevent unnecessary Azure cloud costs when not actively using:
 
-`terraform destroy`
+    `terraform destroy`
 
 <br />
 
@@ -192,24 +187,26 @@ To prevent unnecessary Azure cloud costs when not actively using:
 The repository utilizes two automated, chained GitHub Actions workflows:
 
 1. Continuous Integration (ci.yml)
-* Triggers on Pull Requests and pushes to main. Executes parallel quality gates:
-* Python Code Quality: flake8 for syntax enforcement and pytest for unit testing with coverage.
-* IaC Speculative Checks: terraform fmt validation and speculative terraform plan against live Azure remote state.
-* DevSecOps Security Audit:
-    * bandit: Static Application Security Testing (SAST) for Python code.
-    * checkov: Infrastructure as Code security compliance scanning.
-    * trivy: Container filesystem and vulnerability auditing (CRITICAL, HIGH).
+  * Triggers on Pull Requests and pushes to main. Executes parallel quality gates:
+  * Python Code Quality: flake8 for syntax enforcement and pytest for unit testing with coverage.
+  * IaC Speculative Checks: terraform fmt validation and speculative terraform plan against live Azure remote state.
+  * DevSecOps Security Audit:
+      * bandit: Static Application Security Testing (SAST) for Python code.
+      * checkov: Infrastructure as Code security compliance scanning.
+      * trivy: Container filesystem and vulnerability auditing (CRITICAL, HIGH).
 
 2. Continuous Deployment (cd.yml)
-* Triggers sequentially via workflow_run after ci.yml completes successfully on main:
-* Azure & ACR Authentication: Authenticates non-interactively using an Azure Service Principal (azure/login@v2).
-* Container Build & Push: Compiles the Docker image, tags it with both the Git commit SHA (:${{ github.sha }}) and :latest, and pushes to Azure Container Registry (acrgraphadmincli2026.azurecr.io).
-* Automated IaC Deployment: Executes terraform apply -auto-approve to maintain synchronized infrastructure.
-* Deployment Smoke Test: Pulls the newly pushed image from ACR and executes entrypoint health checks (docker run --rm  --help) to verify image integrity.
+  * Triggers sequentially via workflow_run after ci.yml completes successfully on main:
+  * Azure & ACR Authentication: Authenticates non-interactively using an Azure Service Principal (azure/login@v2).
+  * Container Build & Push: Compiles the Docker image, tags it with both the Git commit SHA (:${{ github.sha }}) and :latest, and pushes to Azure Container Registry (acrgraphadmincli2026.azurecr.io).
+  * Automated IaC Deployment: Executes terraform apply -auto-approve to maintain synchronized infrastructure.
+  * Deployment Smoke Test: Pulls the newly pushed image from ACR and executes entrypoint health checks (docker run --rm  --help) to verify image integrity.
+
+<br />
 
 **GitHub Branch Protection**
-Direct pushes to main are restricted. All Pull Requests require green passes across all three CI status checks (python-ci, terraform-ci, and devsecops-ci) before code can be merged.
 
+Direct pushes to main are restricted. All Pull Requests require all three CI jobs (python-ci, terraform-ci, and devsecops-ci) to complete successfully before code can be merged.
 <br />
 
 
